@@ -1,10 +1,11 @@
-from flask import request, Flask, jsonify
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask
 from flask_marshmallow import Marshmallow
 from db import db, init_db
-from models.actors_model import Actors, actor_schema, actors_schema
-from models.directors_model import Directors, director_schema, directors_schema
-from models.movies_model import Movies, movie_schema, movies_schema
+from models.actors_model import Actors
+from models.directors_model import Directors
+from models.movies_model import Movies
+
+import controllers
 
 app = Flask(__name__)
 
@@ -55,271 +56,103 @@ def create_all():
 
 @app.route('/actors/add', methods=['POST'])
 def add_actor():
-    form = request.form
-
-    actor_first_name = form.get('actor_first_name')
-    actor_last_name = form.get('actor_last_name')
-
-    new_actor = Actors(actor_first_name, actor_last_name)
-
-    db.session.add(new_actor)
-    db.session.commit()
-
-    return actor_schema.jsonify(new_actor), 200
+    return controllers.add_actor()
 
 @app.route('/actors/list')
 def get_all_actors():
-    actor_records = db.session.query(Actors).all()
-
-    return jsonify(actors_schema.dump(actor_records)), 200
+    return controllers.get_all_actors()
 
 @app.route('/actors/list/<actor_id>')
 def get_one_actor(actor_id):
-    actor_record = db.session.query(Actors).filter(Actors.actor_id == actor_id).first()
-
-    return actor_schema.jsonify(actor_record), 200
+    return controllers.get_one_actor(actor_id)
 
 @app.route('/actors/edit/<actor_id>', methods=['PUT'])
 def edit_actor(actor_id):
-    form = request.form
-
-    actor_data = db.session.query(Actors).filter(Actors.actor_id == actor_id).first()
-    actor_first_name = form.get('actor_first_name')
-    actor_last_name = form.get('actor_last_name')
-
-    if actor_data == None:
-        return jsonify('ERROR: actor_id missing!'), 400
-    if actor_data:
-        actor_data.actor_id = actor_id
-        if actor_first_name:
-            actor_data.actor_first_name = actor_first_name
-        if actor_last_name:
-            actor_data.actor_last_name = actor_last_name
-        
-        db.session.commit()
-
-        return actor_schema.jsonify(actor_data), 200
+    return controllers.edit_actor(actor_id)
 
 @app.route('/actors/delete/<actor_id>', methods=['DELETE'])
 def delete_actor(actor_id):
-    actor_data = db.session.query(Actors).filter(Actors.actor_id == actor_id).first()
-    if actor_data:
-        db.session.delete(actor_data)
-        db.session.commit()
-        return jsonify(f'Actor with actor_id {actor_id} deleted'), 200
-    
-    return jsonify(f'Actor with actor_id {actor_id} not found!'), 404
+    return controllers.delete_actor(actor_id)
 
 @app.route('/actors/deactivate/<actor_id>', methods=['PUT'])
 def deactivate_actor(actor_id):
-    actor_data = db.session.query(Actors).filter(Actors.actor_id == actor_id).first()
-    actor_data.active = False
-    db.session.commit()
-    return jsonify(f'Actor with actor_id {actor_id} deactivated'), 200
+    return controllers.deactivate_actor(actor_id)
 
 @app.route('/actors/activate/<actor_id>', methods=['PUT'])
 def activate_actor(actor_id):
-    actor_data = db.session.query(Actors).filter(Actors.actor_id == actor_id).first()
-    actor_data.active = True
-    db.session.commit()
-    return jsonify(f'Actor with actor_id {actor_id} activated'), 200
+    return controllers.activate_actor(actor_id)
 
 @app.route('/actor/search/<search_term>')
-def actors_get_by_search(search_term, internal_call=False):
-    search_term = search_term.lower()
-
-    actor_data = {}
-
-    actor_data = db.session.query(Actors).filter(db.or_( \
-        db.func.lower(Actors.actor_first_name).contains(search_term), \
-        db.func.lower(Actors.actor_last_name).contains(search_term)))
-
-    if internal_call:
-        return actors_schema.dump(actor_data)
-    return jsonify(actors_schema.dump(actor_data))
-
+def actors_get_by_search(search_term):
+    return controllers.actors_get_by_search(search_term)
 
 @app.route('/directors/add', methods=['POST'])
 def add_director():
-    form = request.form
-
-    director_first_name = form.get('director_first_name')
-    director_last_name = form.get('director_last_name')
-
-    new_director = Directors(director_first_name, director_last_name)
-
-    db.session.add(new_director)
-    db.session.commit()
-
-    return director_schema.jsonify(new_director), 200
+    return controllers.add_director()
 
 @app.route('/directors/list')
-def get_all_directors():
-    director_records = db.session.query(Directors).all()
-
-    return jsonify(directors_schema.dump(director_records)), 200
+def get_all_directorrs():
+    return controllers.get_all_directors()
 
 @app.route('/directors/list/<director_id>')
 def get_one_director(director_id):
-    director_record = db.session.query(Directors).filter(Directors.director_id == director_id).first()
-
-    return director_schema.jsonify(director_record), 200
+    return controllers.get_one_director(director_id)
 
 @app.route('/directors/edit/<director_id>', methods=['PUT'])
 def edit_director(director_id):
-    form = request.form
-
-    director_data = db.session.query(Directors).filter(Directors.director_id == director_id).first()
-    director_first_name = form.get('director_first_name')
-    director_last_name = form.get('director_last_name')
-
-    if director_data == None:
-        return jsonify("ERROR: director_id missing!"), 400
-    if director_data:
-        director_data.director_id = director_id
-        if director_first_name:
-            director_data.director_first_name = director_first_name
-        if director_last_name:
-            director_data.director_last_name = director_last_name
-        
-        db.session.commit()
-
-        return director_schema.jsonify(director_data), 200
+    return controllers.edit_director(director_id)
 
 @app.route('/directors/delete/<director_id>', methods=['DELETE'])
 def delete_director(director_id):
-    director_data = db.session.query(Directors).filter(Directors.director_id == director_id).first()
-    if director_data:
-        db.session.delete(director_data)
-        db.session.commit()
-        return jsonify(f'Director with director_id {director_id} deleted'), 200
-    
-    return jsonify(f'Director with director_id {director_id} not found'), 404
+    return controllers.delete_director(director_id)
 
 @app.route('/directors/deactivate/<director_id>', methods=['PUT'])
 def deactivate_director(director_id):
-    director_data = db.session.query(Directors).filter(Directors.director_id == director_id).first()
-    director_data.active = False
-    db.session.commit()
-    return jsonify(f'Director with director_id {director_id} deactiviated'), 200
+    return controllers.deactivate_director(director_id)
 
 @app.route('/directors/activate/<director_id>', methods=['PUT'])
 def activate_director(director_id):
-    director_data = db.session.query(Directors).filter(Directors.director_id == director_id).first()
-    director_data.active = True
-    db.session.commit()
-    return jsonify(f'Director with director_id {director_id} activiated'), 200
+    return controllers.activate_director(director_id)
 
 @app.route('/director/search/<search_term>')
-def directors_get_by_search(search_term, internal_call=False):
-    search_term = search_term.lower()
-
-    director_data = {}
-
-    director_data = db.session.query(Directors).filter(db.or_( \
-        db.func.lower(Directors.director_first_name).contains(search_term), \
-        db.func.lower(Directors.director_last_name).contains(search_term)))
-    if internal_call:
-        return directors_schema.dump(director_data)
-    return jsonify(directors_schema.dump(director_data))
+def directors_get_by_search(search_term):
+    return controllers.directors_get_by_search(search_term)
 
 @app.route('/movies/add', methods=['POST'])
 def movie_add():
-    form = request.form
-
-    movie_name = form.get('movie_name')
-    actor_id = form.get('actor_id')
-    actor_first_name = form.get('actor_first_name')
-    actor_last_name = form.get('actor_last_name')
-    director_id = form.get('director_id')
-    director_first_name = form.get('director_first_name')
-    director_last_name = form.get('director_first_name')
-
-    new_movie = Movies(movie_name, actor_id, actor_first_name, actor_last_name, director_id, director_first_name, director_last_name)
-
-    db.session.add(new_movie)
-    db.session.commit()
-
-    return movie_schema.jsonify(new_movie), 200
+    return controllers.movie_add()
 
 @app.route('/movies/list')
 def get_all_movies():
-    movie_data = db.session.query(Movies).all()
-
-    return jsonify(movies_schema.dump(movie_data)), 200
+    return controllers.get_all_movies()
 
 @app.route('/movies/list/<movie_id>')
 def get_one_movie(movie_id):
-    movie_record = db.session.query(Movies).filter(Movies.movie_id == movie_id).first()
-
-    return jsonify(movie_schema.dump(movie_record)), 200
+    return controllers.get_one_movie(movie_id)
 
 @app.route('/movies/edit/<movie_id>', methods=['PUT'])
 def edit_movie(movie_id):
-    form = request.form
-
-    movie_data = db.session.query(Movies).filter(Movies.movie_id == movie_id).first()
-    movie_name = form.get('movie_name')
-
-    if movie_data == None:
-        return jsonify("ERROR: movie_id missing!"), 400
-    if movie_data:
-        movie_data.movie_id = movie_id
-        if movie_name:
-            movie_data.movie_name = movie_name
-
-        db.session.commit()
-
-        return movie_schema.jsonify(movie_data), 200
+    return controllers.edit_movie(movie_id)
 
 @app.route('/movies/delete/<movie_id>', methods=['DELETE'])
 def delete_movie(movie_id):
-    movie_data = db.session.query(Movies).filter(Movies.movie_id == movie_id).first()
-
-    if movie_data:
-        db.session.delete(movie_data)
-        db.session.commit()
-        return jsonify(f'Movie with movie_id {movie_id} deleted')
-
-    return jsonify(f'Movie with movie_id {movie_id} not found'), 400
+    return controllers.delete_movie(movie_id)
 
 @app.route('/movies/deactivate/<movie_id>', methods=['PUT'])
 def deactivate_movie(movie_id):
-    movie_data = db.session.query(Movies).filter(Movies.movie_id == movie_id).first()
-    movie_data.active = False
-    db.session.commit()
-    return jsonify(f'Movie with movie_id {movie_id} deactivated'), 200
+    return controllers.deactivate_movie(movie_id)
 
 @app.route('/movies/activate/<movie_id>', methods=['PUT'])
 def activate_movie(movie_id):
-    movie_data = db.session.query(Movies).filter(Movies.movie_id == movie_id).first()
-    movie_data.active = True
-    db.session.commit()
-    return jsonify(f'Movie with movie_id {movie_id} activated'), 200
+    return controllers.activate_movie(movie_id)
 
 @app.route('/movie/search/<search_term>')
-def movies_get_by_search(search_term, internal_call=False):
-    search_term = search_term.lower()
-
-    movie_data = {}
-
-    movie_data = db.session.query(Movies).filter(db.or_( \
-        db.func.lower(Movies.movie_name).contains(search_term)))
-
-    if internal_call:
-        return movies_schema.dump(movie_data)
-    return jsonify(movies_schema.dump(movie_data))
+def movies_get_by_search(search_term):
+    return controllers.movies_get_by_search(search_term)
 
 @app.route('/search/<search_term>')
 def get_all_by_search(search_term):
-    search_term = search_term.lower()
-    
-    search_results = {}
-    search_results["actors"] = actors_get_by_search(search_term, True)
-    search_results["directors"] = directors_get_by_search(search_term, True)
-    search_results["movies"] = movies_get_by_search(search_term, True)
-
-    return jsonify(search_results)
+    return controllers.get_all_by_search(search_term)
 
 if __name__ == "__main__":
     create_all()
