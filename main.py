@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_marshmallow import Marshmallow
-from db import db, init_db
+from db import db, query, init_db
 
 from models.actors_model import Actors
 from models.directors_model import Directors
@@ -23,11 +23,11 @@ def create_all():
         db.create_all()
 
         print("Querying for Movie...")
-        movie_data = db.session.query(Movies).filter(Movies.movie_name == "Top Gun").first()
+        movie_data = query(Movies).filter(Movies.movie_name == "Top Gun").first()
         if movie_data == None:
             print("Movie not found! Creating Top Gun...")
-            actor_data = db.session.query(Actors).filter(Actors.actor_first_name == "Tom").first()
-            director_data = db.session.query(Directors).filter(Directors.director_first_name == "Tony").first()
+            actor_data = query(Actors).filter(Actors.actor_first_name == "Tom").first()
+            director_data = query(Directors).filter(Directors.director_first_name == "Tony").first()
             if actor_data == None:
                 print("Adding Actor: Tom Cruise...")
                 actor_first_name = "Tom"
