@@ -1,5 +1,5 @@
 from flask import request, jsonify
-from db import db
+from db import db, query
 
 from models.movies_model import Movies, movie_schema, movies_schema
 
@@ -22,19 +22,19 @@ def movie_add():
     return jsonify(movie_schema.dump(new_movie)), 200
 
 def get_all_movies():
-    movie_data = db.session.query(Movies).all()
+    movie_data = query(Movies).all()
 
     return jsonify(movies_schema.dump(movie_data)), 200
 
 def get_one_movie(movie_id):
-    movie_record = db.session.query(Movies).filter(Movies.movie_id == movie_id).first()
+    movie_record = query(Movies).filter(Movies.movie_id == movie_id).first()
 
     return jsonify(movie_schema.dump(movie_record)), 200
 
 def edit_movie(movie_id):
     form = request.form
 
-    movie_data = db.session.query(Movies).filter(Movies.movie_id == movie_id).first()
+    movie_data = query(Movies).filter(Movies.movie_id == movie_id).first()
     movie_name = form.get('movie_name')
 
     if movie_data == None:
@@ -49,7 +49,7 @@ def edit_movie(movie_id):
         return jsonify(movie_schema.dump(movie_data)), 200
 
 def delete_movie(movie_id):
-    movie_data = db.session.query(Movies).filter(Movies.movie_id == movie_id).first()
+    movie_data = query(Movies).filter(Movies.movie_id == movie_id).first()
 
     if movie_data:
         db.session.delete(movie_data)
@@ -59,7 +59,7 @@ def delete_movie(movie_id):
     return jsonify(f'Movie with movie_id {movie_id} not found'), 400
 
 def deactivate_movie(movie_id):
-    movie_data = db.session.query(Movies).filter(Movies.movie_id == movie_id).first()
+    movie_data = query(Movies).filter(Movies.movie_id == movie_id).first()
     if movie_data == None:
         return jsonify(f'Movie with movie_id {movie_id} not found!')
     movie_data.active = False
@@ -67,7 +67,7 @@ def deactivate_movie(movie_id):
     return jsonify(f'Movie with movie_id {movie_id} deactivated'), 200
 
 def activate_movie(movie_id):
-    movie_data = db.session.query(Movies).filter(Movies.movie_id == movie_id).first()
+    movie_data = query(Movies).filter(Movies.movie_id == movie_id).first()
     if movie_data == None:
         return jsonify(f'Movie with movie_id {movie_id} not found!')
     movie_data.active = True
@@ -79,7 +79,7 @@ def movies_get_by_search(search_term, internal_call=False):
 
     movie_data = {}
 
-    movie_data = db.session.query(Movies).filter(db.or_( \
+    movie_data = query(Movies).filter(db.or_( \
         db.func.lower(Movies.movie_name).contains(search_term)))
 
     if internal_call:
